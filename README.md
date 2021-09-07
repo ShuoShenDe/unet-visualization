@@ -1,7 +1,7 @@
 
 The project is modified from [unet-vis](https://github.com/adrijanik/unet-vis)
 # Setting tiles path
-All of the visualization setting are in the [show code](./show code/) folders.The tiles path is defined in [points.js](./data/points.js). Open it. 
+All of the visualization setting are in the [show code](https://github.com/ShuoShen-Susan/unet-visualization/tree/main/show%20code) folders.The tiles path is defined in [points.js](./data/points.js). Open it. 
 - `mask_path_web`: the mask tiles path
 - `iou`:  intersection over union
 - `pred_path`: the prediction tiles path
