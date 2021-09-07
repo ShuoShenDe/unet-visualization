@@ -1,4 +1,5 @@
 
+The project is modified from [unet-vis](https://github.com/adrijanik/unet-vis)
 # Setting tiles path
 The tiles path is defined in [points.js](./data/points.js). Open it. 
 - `mask_path_web`: the mask tiles path
