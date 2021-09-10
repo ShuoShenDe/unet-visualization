@@ -1,18 +1,15 @@
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import imageio
 import numpy as np
 import torch
-import torchvision.ops.boxes as bops
 import json
 from collections import OrderedDict
 import random
 from PIL import Image
 import matplotlib
+import pandas as pd
 
 
 def binaryMaskIOU(mask1, mask2):  # From the question.
@@ -36,15 +33,22 @@ if __name__ == '__main__':
     pathX = 'Y:/Users/Shuo/tiles_ST1_20200730_MMR_img/'
     pathY = 'Y:/Users/Shuo/tiles_ST1_20200730_MMR_label/'
     pathY_hat = "D:/cern/model1/"
-
     base_path = "D:/unet-vis/"
     image_fold = "newimages"
 
+    image_series = "ST1_20200808_MMR_1C48"
+    predict_threshold = 0.8
+    iou_threshold = 0.5
+
     filesX = os.listdir(pathX)
+
     mydata = []
     mycoords = []
-    file_name = []
-    with open('D:/unet-vis/data/points1.js') as dataFile:
+    low_iou_file_name = []
+    low_iou = []
+
+    # initialization with points1.js
+    with open('../data/points1.js') as dataFile:
         data = dataFile.read()
         obj = data[data.find('['): data.rfind(']') + 1]
         jsonObj = json.loads(obj)
@@ -54,31 +58,44 @@ if __name__ == '__main__':
             mycoords.append([pointIOU, pointCoord])
     mycoords = sorted(mycoords, key=lambda x: x[0])
 
+
     for f in filesX:
+        if image_series not in f:
+            continue
         im = imageio.imread(pathX + f)
         pred = np.load(pathY_hat + f.split('.')[0] + '.npy')
-        pred[pred >= 0.5] = 1
-        pred[pred < 0.5] = 0
-        imageY = imageio.imread(pathY + f)
+        pred[pred >= predict_threshold] = 1
+        pred[pred < predict_threshold] = 0
+        imY = imageio.imread(pathY + f)
 
-        # matplotlib.image.imsave(base_path + image_fold +"/X/" + f, f)
+        # save X, Y, Y_hat images to corresponding folders
+        # matplotlib.image.imsave(base_path + image_fold +"/X/" + f, im)
+        # matplotlib.image.imsave(base_path + image_fold + "/Y/"+f, imY)
         # matplotlib.image.imsave(base_path + image_fold +"/Y_hat/" + f, pred)
-        # matplotlib.image.imsave(base_path + image_fold + "/Y/"+f, imageY)
 
-        iou = binaryMaskIOU(pred, imageY)
-        if iou < 0.5:
-            file_name.append(f)
-            print(f)
-            print(iou)
+        iou = binaryMaskIOU(pred, imY)
+        if iou < iou_threshold:
+            low_iou_file_name.append(f)
+            low_iou.append(iou)
         nearestPoint = min(mycoords, key=lambda x: abs(x[0] - iou))[0]
         coordslist = [x for x in mycoords if x[0] == nearestPoint]
-        # print(coordslist)
-        data = {"mask_path_web": image_fold + "/Y/" + f, "iou": iou, "pred_path": "http://0.0.0.0:8000/"+image_fold+"/Y_hat/" + f,
-                "coords": random.choice(coordslist)[1], "patch_path": "http://0.0.0.0:8000/"+image_fold+"/X/" + f,
+
+        # save info in points.js
+        data = {"mask_path_web": image_fold + "/Y/" + f, "iou": iou,
+                "pred_path": "http://0.0.0.0:8000/" + image_fold + "/Y_hat/" + f,
+                "coords": random.choice(coordslist)[1], "patch_path": "http://0.0.0.0:8000/" + image_fold + "/X/" + f,
                 "patch_path_web": image_fold + "/X/" + f,
-                "mask_path": "http://0.0.0.0:8000/"+image_fold+"/Y/"+f, "id": f.split('.')[0],
+                "mask_path": "http://0.0.0.0:8000/" + image_fold + "/Y/" + f, "id": f.split('.')[0],
                 "pred_path_web": image_fold + "/Y_hat/" + f}
         mydata.append(data)
+
+    # save file name with low iou in csv
+    pd = pd.DataFrame(low_iou_file_name, columns=['file_name'])
+    pd['iou'] = low_iou
+    pd.to_csv('file_name_with_low_iou.csv')
+
     print(mydata, file=open('points.js', 'w'))
-    print(file_name, file=open('low_iou_file.txt', 'w'))
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    print(low_iou_file_name, file=open(
+        'low_iou_file_predict_threshold_' + predict_threshold.__str__() + 'iou_threshold' + iou_threshold.__str__() + '.txt',
+        'w'))
+# # See PyCharm help at https://www.jetbrains.com/help/pycharm/
