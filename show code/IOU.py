@@ -94,7 +94,9 @@ if __name__ == '__main__':
     pd['iou'] = low_iou
     pd.to_csv('file_name_with_low_iou.csv')
 
+    # save file points.js
     print(mydata, file=open('points.js', 'w'))
+    #s ave file low_iou_file_predict_threshold_
     print(low_iou_file_name, file=open(
         'low_iou_file_predict_threshold_' + predict_threshold.__str__() + 'iou_threshold' + iou_threshold.__str__() + '.txt',
         'w'))
